@@ -34,6 +34,7 @@ function resolveBuildPath(file) {
 
 function createPackageFile() {
   return new Promise((resolve) => {
+    console.log(__dirname);
     fse.readFile(path.resolve(__dirname, '../package.json'), 'utf8', (err, data) => {
       if (err) {
         throw err;
@@ -58,7 +59,7 @@ function createPackageFile() {
     } = packageData;
 
     const minimalPackage = {
-      name: 'material-ui-scrollable-tabs',
+      name: 'mui-scrollable-tabs',
       author,
       version,
       description,
