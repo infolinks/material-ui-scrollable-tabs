@@ -1,9 +1,10 @@
-import PropTypes from 'prop-types';
+// import PropTypes from 'prop-types';
 import React, {
   Component,
   cloneElement,
   Children,
   isValidElement,
+  PropTypes,
 } from 'react';
 import EventListener from 'react-event-listener';
 import warning from 'warning';
@@ -35,7 +36,7 @@ const getStyles = (props, context, state) => {
   };
 };
 
-class Tabs extends Component {
+class Tabs extends React.Component {
   static propTypes = {
     /**
      * Should be used to pass `Tab` components.
