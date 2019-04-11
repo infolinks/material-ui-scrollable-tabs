@@ -9,7 +9,6 @@ import EventListener from 'react-event-listener';
 import warning from 'warning';
 import scroll from 'scroll';
 import ScrollbarSize from 'react-scrollbar-size';
-import withWidth from 'material-ui/utils/withWidth';
 import TabTemplate from './TabTemplate';
 import InkBar from './InkBar';
 import ScrollButton from './ScrollButton';
@@ -480,4 +479,4 @@ class Tabs extends Component {
   }
 }
 
-export default withWidth()(Tabs);
+export default Tabs;
