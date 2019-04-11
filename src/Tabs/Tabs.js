@@ -9,10 +9,11 @@ import EventListener from 'react-event-listener';
 import warning from 'warning';
 import scroll from 'scroll';
 import ScrollbarSize from 'react-scrollbar-size';
-import withWidth, {LARGE} from 'material-ui/utils/withWidth';
+import withWidth from 'material-ui/utils/withWidth';
 import TabTemplate from './TabTemplate';
 import InkBar from './InkBar';
 import ScrollButton from './ScrollButton';
+
 
 const getStyles = (props, context, state) => {
   const {tabType} = props;
@@ -65,6 +66,14 @@ class Tabs extends Component {
      */
     inkBarStyle: PropTypes.object,
     /**
+     * Indicates that the tab bar is rendered on a large view and should use the wider stylings.
+     */
+    isLargeView: PropTypes.bool,
+    /**
+     * Called when the selected value change.
+     */
+    onChange: PropTypes.func,
+    /**
      * Override the inline-styles of the root element.
      */
     style: PropTypes.object,
@@ -91,14 +100,15 @@ class Tabs extends Component {
      */
     tabType: PropTypes.oneOf(['fixed', 'scrollable', 'scrollable-buttons']),
     /**
-     * @ignore
-     * passed by withWidth decorator
+     * Makes Tabs controllable and selects the tab whose value prop matches this prop.
      */
-    width: PropTypes.number.isRequired,
+    value: PropTypes.any,
   };
 
   static defaultProps = {
     initialSelectedIndex: 0,
+    onChange: () => {},
+    isLargeView: false,
     tabType: 'fixed',
   };
 
@@ -129,6 +139,16 @@ class Tabs extends Component {
      * mounting the tabs container (and therefore mounting the selected tab) we will force an update of
      * the tabs container to cause another render of the indicator with the appropriate size and width.
      */
+    const valueLink = this.getValueLink(this.props);
+    const initialIndex = this.props.initialSelectedIndex;
+
+    this.setState({ // eslint-disable-line react/no-did-mount-set-state
+      selectedIndex: valueLink.value !== undefined ?
+        this.getSelectedIndex(this.props) :
+        initialIndex < this.getTabCount() ?
+          initialIndex :
+          0,
+    });
     this.forceUpdate();
     /**
      * Now that the tab strip has been fully rendered, determine if the scroll buttons should be shown.
@@ -140,21 +160,17 @@ class Tabs extends Component {
     this.scrollSelectedIntoView(this.state.selectedIndex);
   }
 
-  componentWillReceiveProps({initialSelectedIndex}) {
-    if (initialSelectedIndex !== this.props.initialSelectedIndex) {
-      this.updateSelectedIndexState(initialSelectedIndex);
-    }
-  }
+  componentWillReceiveProps(newProps, nextContext) {
+    const valueLink = this.getValueLink(newProps);
+    const newState = {
+      muiTheme: nextContext.muiTheme || this.context.muiTheme,
+    };
 
-  componentDidUpdate(prevProps) {
-    /**
-     * If the withWidth decorator changes the viewport size then it's likely the selected tab changed size as well.
-     * This means the indicator will not be the appropriate size any longer.  Force another update to ensure the
-     * indicator renders at the proper size.
-     */
-    if (this.props.width !== prevProps.width) {
-      this.forceUpdate();
+    if (valueLink.value !== undefined) {
+      newState.selectedIndex = this.getSelectedIndex(newProps);
     }
+
+    this.setState(newState);
   }
 
   tabComponentList = [];
@@ -244,6 +260,26 @@ class Tabs extends Component {
     scroll.left(this.tabItemContainerNode, nextScrollLeft);
     this.setScrollButtonState();
   }
+  getValueLink(props) {
+    return props.valueLink || {
+      value: props.value,
+      requestChange: props.onChange,
+    };
+  }
+
+  getSelectedIndex(props) {
+    const valueLink = this.getValueLink(props);
+    let selectedIndex = -1;
+
+    this.getTabs(props).forEach((tab, index) => {
+      if (valueLink.value === tab.props.value) {
+        selectedIndex = index;
+      }
+    });
+
+    return selectedIndex;
+  }
+
 
   scrollSelectedIntoView = (index) => {
     if (this.props.tabType !== 'fixed') {
@@ -290,17 +326,19 @@ class Tabs extends Component {
       contentContainerStyle,
       initialSelectedIndex, // eslint-disable-line no-unused-vars
       inkBarStyle,
+      onChange, // eslint-disable-line no-unused-vars
       style,
       tabItemContainerStyle,
       tabTemplate,
       tabTemplateStyle,
       tabType,
-      width,
       ...other
     } = this.props;
 
     const {prepareStyles} = this.context.muiTheme;
     const styles = getStyles(this.props, this.context, this.state);
+    const valueLink = this.getValueLink(this.props);
+    const tabValue = valueLink.value;
     const tabContent = [];
     const fixedWidth = 100 / this.getTabCount();
 
@@ -310,6 +348,11 @@ class Tabs extends Component {
       warning(tab.type && tab.type.muiName === 'Tab',
         `Material-UI: Tabs only accepts Tab Components as children.
         Found ${tab.type.muiName || tab.type} as child number ${index + 1} of Tabs`);
+
+      warning(!tabValue || tab.props.value !== undefined,
+        `Material-UI: Tabs value prop has been passed, but Tab ${index}
+        does not have a value prop. Needs value if Tabs is going
+        to be a controlled component.`);
 
       tabContent.push(tab.props.children ?
         React.createElement(tabTemplate || TabTemplate, {
@@ -325,7 +368,6 @@ class Tabs extends Component {
         height: tab.props.height || tabHeight,
         width: (tabType === 'fixed') ? `${fixedWidth}%` : 'auto',
         onClick: this.handleTabClick,
-        isLargeView: (width === LARGE),
         ref: (tabComponent) => {
           this.tabComponentList[index] = tabComponent;
         },

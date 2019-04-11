@@ -35,6 +35,7 @@
   },
   "dependencies": {
     "babel-runtime": "^6.26.0",
+    "material-ui": "^0.17.1",
     "prop-types": "^15.6.0",
     "react-event-listener": "^0.5.1",
     "react-scrollbar-size": "^2.0.2",
